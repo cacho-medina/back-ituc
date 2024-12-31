@@ -19,9 +19,13 @@ const User = sequelize.define(
                 notNull: true,
             },
         },
+        telefono: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
         password: { type: DataTypes.STRING, allowNull: false },
         role: {
-            type: DataTypes.ENUM("superAdmin", "admin", "seller"),
+            type: DataTypes.ENUM("admin", "seller"),
             defaultValue: "admin",
             allowNull: false,
         },
@@ -39,17 +43,9 @@ const User = sequelize.define(
             },
             validate: {
                 isSucursalRequired(value) {
-                    if (
-                        (this.role === "admin" || this.role === "seller") &&
-                        !value
-                    ) {
+                    if (this.role === "seller" && !value) {
                         throw new Error(
-                            "El campo sucursalId es obligatorio para usuarios con rol admin o seller."
-                        );
-                    }
-                    if (this.role === "superAdmin" && value) {
-                        throw new Error(
-                            "Un superAdmin no debe estar relacionado con ninguna sucursal."
+                            "El campo sucursalId es obligatorio para usuarios con rol seller."
                         );
                     }
                 },

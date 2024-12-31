@@ -13,9 +13,13 @@ const Venta = sequelize.define(
             type: DataTypes.DATE,
             allowNull: false,
         },
+        tipo_venta: {
+            type: DataTypes.ENUM("venta", "permuta"),
+            allowNull: false,
+        },
         vendedor: {
             type: DataTypes.STRING,
-            allowNull: false,
+            allowNull: true,
         },
         nombre_cliente: {
             type: DataTypes.STRING,
@@ -29,6 +33,22 @@ const Venta = sequelize.define(
             type: DataTypes.STRING,
             allowNull: false,
         },
+        pago_usd: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+        },
+        pago_pesos: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+        },
+        pago_tarjeta: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+        },
+        pago_transferencia: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+        },
         telefonoId: {
             //asociar a telefono
             type: DataTypes.UUID,
@@ -39,7 +59,6 @@ const Venta = sequelize.define(
             type: DataTypes.UUID,
             allowNull: false,
         },
-        //agregar metodo de pago
     },
     { timestamps: false }
 );

@@ -38,7 +38,7 @@ export const createTelefono = async (req, res) => {
             sucursalId,
         });
 
-        res.status(201).json({ message: "Telefono creado exitosamente" });
+        res.status(201).json(newTelefono);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Error al crear el teléfono", error });
@@ -49,7 +49,7 @@ export const createTelefono = async (req, res) => {
 export const getTelefonos = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        const limit = parseInt(req.query.limit) || 15;
         const offset = (page - 1) * limit;
         const { count, rows: telefonos } = await Telefono.findAndCountAll({
             /*             include: {
@@ -66,6 +66,20 @@ export const getTelefonos = async (req, res) => {
             currentPage: page,
             totalPages: Math.ceil(count / limit),
         });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error al obtener los teléfonos",
+            error,
+        });
+    }
+};
+
+export const getTelefonosBySucursal = async (req, res) => {
+    try {
+        const { sucursalId } = req.params;
+        const telefonos = await Telefono.findAll({ where: { sucursalId } });
+        res.status(200).json(telefonos);
     } catch (error) {
         console.error(error);
         res.status(500).json({
@@ -96,6 +110,55 @@ export const getTelefonoById = async (req, res) => {
         console.error(error);
         res.status(500).json({
             message: "Error al obtener el teléfono",
+            error,
+        });
+    }
+};
+
+// Obtener todos los teléfonos disponibles
+export const getTelefonosDisponibles = async (req, res) => {
+    try {
+        const telefonos = await Telefono.findAll({
+            where: { status: "disponible" },
+        });
+        res.status(200).json(telefonos);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error al obtener los teléfonos disponibles",
+            error,
+        });
+    }
+};
+
+//Obtener todos los telefonos disponibles por sucursal
+export const getTelefonosDisponiblesBySucursal = async (req, res) => {
+    try {
+        const { sucursalId } = req.params;
+        const telefonos = await Telefono.findAll({
+            where: { sucursalId, status: "disponible" },
+        });
+        res.status(200).json(telefonos);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error al obtener los teléfonos disponibles",
+            error,
+        });
+    }
+};
+
+// Obtener todos los teléfonos en garantia
+export const getTelefonosEnGarantia = async (req, res) => {
+    try {
+        const telefonos = await Telefono.findAll({
+            where: { status: "garantia" },
+        });
+        res.status(200).json(telefonos);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error al obtener los teléfonos en garantia",
             error,
         });
     }
@@ -153,6 +216,7 @@ export const updateTelefono = async (req, res) => {
 };
 
 // Cambiar el estado de un teléfono
+//funcion para actualizar el estado de un teléfono luego de que se haya vendido, puesto en garantia, etc
 export const changeTelefonoStatus = async (req, res) => {
     try {
         const { id } = req.params;

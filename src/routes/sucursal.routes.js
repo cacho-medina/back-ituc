@@ -16,7 +16,7 @@ router.get("/:id", authTokenJwt, getSucursalesById);
 router.post(
     "/create",
     authTokenJwt,
-    authRole(["superAdmin"]),
+    authRole(["admin"]),
     validacionSucursal,
     createSucursal
 );
@@ -30,7 +30,7 @@ router.put(
 router.delete(
     "/delete/:id",
     authTokenJwt,
-    authRole(["superAdmin"]),
+    authRole(["admin"]),
     deleteSucursales
 );
 

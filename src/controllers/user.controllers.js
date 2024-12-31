@@ -40,6 +40,8 @@ export const login = async (req, res) => {
                 email: user.email,
                 name: user.name,
                 role: user.role,
+                telefono: user.telefono,
+                sucursal: user.sucursalId,
             },
             token, //borrar del cuerpo de response al entrar en production
         });
@@ -49,9 +51,9 @@ export const login = async (req, res) => {
     }
 };
 
-export const registerUserSeller = async (req, res) => {
+export const registerUser = async (req, res) => {
     try {
-        const { email, password, name, sucursalId } = req.body;
+        const { email, password, name, telefono, role, sucursalId } = req.body;
 
         // Verificar si el usuario ya existe
         const existingUser = await User.findOne({ where: { email } });
@@ -67,72 +69,13 @@ export const registerUserSeller = async (req, res) => {
         const user = await User.create({
             name,
             email,
+            telefono,
             password: hashedPassword,
-            role: "seller",
+            role,
             sucursalId: sucursalId || null,
         });
 
-        res.status(201).json({ message: "User registered successfully" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error creating user" });
-    }
-};
-export const registerUserAdmin = async (req, res) => {
-    try {
-        const { email, password, name, sucursalId } = req.body;
-
-        // Verificar si el usuario ya existe
-        const existingUser = await User.findOne({ where: { email } });
-        if (existingUser) {
-            return res.status(400).json({ message: "User already exists" });
-        }
-
-        // Encriptar la contraseña
-        const salt = bcrypt.genSaltSync(10);
-        const hashedPassword = bcrypt.hashSync(password, salt);
-
-        // Crear nuevo usuario
-        const user = await User.create({
-            name,
-            email,
-            password: hashedPassword,
-            role: "admin",
-            sucursalId: sucursalId || null,
-        });
-
-        res.status(201).json({ message: "User registered successfully" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error creating user" });
-    }
-};
-
-export const registerUserSuperAdmin = async (req, res) => {
-    try {
-        const { email, password, name } = req.body;
-
-        // Verificar si el usuario ya existe
-        const existingUser = await User.findOne({ where: { email } });
-        if (existingUser) {
-            return res.status(400).json({ message: "User already exists" });
-        }
-
-        // Encriptar la contraseña
-        const salt = bcrypt.genSaltSync(10);
-        const hashedPassword = bcrypt.hashSync(password, salt);
-
-        // Crear nuevo usuario
-        const user = await User.create({
-            name,
-            email,
-            password: hashedPassword,
-            role: "superAdmin",
-        });
-
-        res.status(201).json({
-            message: "Super Admin registered successfully",
-        });
+        res.status(201).json(user);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Error creating user" });
@@ -142,7 +85,7 @@ export const registerUserSuperAdmin = async (req, res) => {
 export const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, email, password, sucursalId } = req.body;
+        const { name, email, password, telefono, sucursalId } = req.body;
 
         const user = await User.findByPk(id);
         if (!user) {
@@ -152,6 +95,7 @@ export const updateUser = async (req, res) => {
         // Actualizar información del usuario
         user.name = name || user.name;
         user.email = email || user.email;
+        user.telefono = telefono || user.telefono;
         user.password = password || user.password;
         user.sucursalId = sucursalId || user.sucursalId;
 
@@ -215,21 +159,11 @@ export const getUsers = async (req, res) => {
 
     try {
         const { count, rows: users } = await User.findAndCountAll({
-            where: {
-                role: {
-                    [Op.ne]: "superAdmin",
-                },
-            },
             limit,
             offset,
         });
 
-        res.status(200).json({
-            users,
-            totalUsers: count,
-            currentPage: page,
-            totalPages: Math.ceil(count / limit),
-        });
+        res.status(200).json(users);
     } catch (error) {
         console.error(error);
         res.status(400).json({ message: "Users not found" });

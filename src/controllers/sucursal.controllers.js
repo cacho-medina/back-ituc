@@ -22,20 +22,9 @@ export const createSucursal = async (req, res) => {
 
 // Obtener todas las sucursales
 export const getSucursales = async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
     try {
-        const { count, rows: sucursales } = await Sucursal.findAndCountAll({
-            limit,
-            offset,
-        });
-        res.status(200).json({
-            sucursales,
-            totalSucursales: count,
-            currentPage: page,
-            totalPages: Math.ceil(count / limit),
-        });
+        const sucursales = await Sucursal.findAll();
+        res.status(200).json(sucursales);
     } catch (error) {
         console.error(error);
         res.status(500).json({

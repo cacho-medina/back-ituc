@@ -12,24 +12,116 @@ export const createVentas = async (req, res) => {
             nombre_cliente,
             telefono_cliente,
             dni_cliente,
+            pago_usd,
+            pago_pesos,
+            pago_tarjeta,
+            pago_transferencia,
             telefonoId,
-            sucursalId,
         } = req.body;
 
+        //busca el telefono a vender
+        const phoneForSale = await Telefono.findOne({
+            where: { id: telefonoId },
+        });
+        if (!phoneForSale) {
+            return res.status(404).json({ message: "Telefono no encontrado" });
+        }
+
+        //registra la venta
         const newVenta = await Venta.create({
             fecha: Date.now(),
-            vendedor,
+            vendedor: vendedor || null,
+            tipo_venta: "venta",
             nombre_cliente,
             telefono_cliente,
             dni_cliente,
+            pago_usd,
+            pago_pesos,
+            pago_tarjeta,
+            pago_transferencia,
             telefonoId,
-            sucursalId,
+            sucursalId: phoneForSale.sucursalId,
         });
+
+        //actualiza el estado del telefono a vendido
+        phoneForSale.status = "vendido";
+        await phoneForSale.save();
 
         res.status(201).json(newVenta);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Error al crear la venta", error });
+    }
+};
+
+export const createPermuta = async (req, res) => {
+    try {
+        const {
+            vendedor,
+            nombre_cliente,
+            telefono_cliente,
+            dni_cliente,
+            model,
+            batery_status,
+            color,
+            price,
+            imei,
+            storage_capacity,
+            status,
+            details,
+            pago_usd,
+            pago_pesos,
+            pago_tarjeta,
+            pago_transferencia,
+            telefonoId,
+        } = req.body;
+
+        //busca el telefono a vender
+        const phoneForSale = await Telefono.findOne({
+            where: { id: telefonoId },
+        });
+        if (!phoneForSale) {
+            return res.status(404).json({ message: "Telefono no encontrado" });
+        }
+
+        //registrar el telefono entrante
+        const newPhone = await Telefono.create({
+            model,
+            batery_status,
+            color,
+            price,
+            imei,
+            storage_capacity,
+            status,
+            details,
+            sucursalId: phoneForSale.sucursalId,
+            provider: "permuta",
+        });
+
+        //registra la venta
+        const newVenta = await Venta.create({
+            fecha: Date.now(),
+            vendedor: vendedor || null,
+            tipo_venta: "permuta",
+            nombre_cliente,
+            telefono_cliente,
+            dni_cliente,
+            pago_usd,
+            pago_pesos,
+            pago_tarjeta,
+            pago_transferencia,
+            telefonoId,
+            sucursalId: phoneForSale.sucursalId,
+        });
+
+        //actualiza el estado del telefono a vendido
+        phoneForSale.status = "vendido";
+        await phoneForSale.save();
+
+        res.status(201).json(newVenta);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error al registrar permuta" });
     }
 };
 
@@ -252,6 +344,20 @@ export const getVentasDiarias = async (req, res) => {
         console.error(error);
         res.status(500).json({
             message: "Error al obtener las ventas diarias",
+            error,
+        });
+    }
+};
+
+export const getVentasPorTipo = async (req, res) => {
+    try {
+        const { tipo_venta } = req.params;
+        const ventas = await Venta.findAll({ where: { tipo_venta } });
+        res.status(200).json(ventas);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error al obtener las ventas por tipo",
             error,
         });
     }
