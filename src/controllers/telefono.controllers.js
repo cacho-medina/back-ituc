@@ -35,7 +35,7 @@ export const createTelefono = async (req, res) => {
             references,
             details,
             status,
-            sucursalId,
+            sucursalId: sucursalId || null,
         });
 
         res.status(201).json(newTelefono);
@@ -164,6 +164,37 @@ export const getTelefonosEnGarantia = async (req, res) => {
     }
 };
 
+export const getTelefonosDisponiblesYDepositoBySucursal = async (req, res) => {
+    try {
+        const { id } = req.params;
+        //obtener los teléfonos disponibles de la sucursal
+        const telefonos = await Telefono.findAll({
+            where: { sucursalId: id, status: ["disponible"] },
+        });
+        if (telefonos.length === 0) {
+            return res
+                .status(404)
+                .json({ message: "No hay teléfonos disponibles o depositos" });
+        }
+        //obtener los teléfonos en el deposito
+        const telefonosDeposito = await Telefono.findAll({
+            where: { status: ["deposito"] },
+        });
+        //si no hay teléfonos en el deposito, retornar los teléfonos disponibles
+        if (telefonosDeposito.length === 0) {
+            return res.status(200).json(telefonos);
+        }
+        //si hay teléfonos en el deposito, retornar los teléfonos disponibles y los teléfonos en el deposito
+        res.status(200).json([...telefonos, ...telefonosDeposito]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error al obtener los teléfonos disponibles y depositos",
+            error,
+        });
+    }
+};
+
 // Actualizar un teléfono
 export const updateTelefono = async (req, res) => {
     try {
@@ -202,10 +233,7 @@ export const updateTelefono = async (req, res) => {
 
         await telefono.save();
 
-        res.status(200).json({
-            message: "Telefono actualizado exitosamente",
-            telefono,
-        });
+        res.status(200).json(telefono);
     } catch (error) {
         console.error(error);
         res.status(500).json({

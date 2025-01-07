@@ -5,7 +5,7 @@ import "../models/relations.js";
 import { Op } from "sequelize";
 
 // Crear una nueva venta
-export const createVentas = async (req, res) => {
+export const createVenta = async (req, res) => {
     try {
         const {
             vendedor,
@@ -25,6 +25,9 @@ export const createVentas = async (req, res) => {
         });
         if (!phoneForSale) {
             return res.status(404).json({ message: "Telefono no encontrado" });
+        }
+        if (phoneForSale.status === "vendido") {
+            return res.status(400).json({ message: "Telefono ya vendido" });
         }
 
         //registra la venta
@@ -67,7 +70,6 @@ export const createPermuta = async (req, res) => {
             price,
             imei,
             storage_capacity,
-            status,
             details,
             pago_usd,
             pago_pesos,
@@ -83,16 +85,20 @@ export const createPermuta = async (req, res) => {
         if (!phoneForSale) {
             return res.status(404).json({ message: "Telefono no encontrado" });
         }
+        if (phoneForSale.status === "vendido") {
+            return res.status(400).json({ message: "Telefono ya vendido" });
+        }
 
         //registrar el telefono entrante
         const newPhone = await Telefono.create({
             model,
             batery_status,
             color,
-            price,
+            purchase_price: price,
+            price: 0,
             imei,
             storage_capacity,
-            status,
+            status: "deposito",
             details,
             sucursalId: phoneForSale.sucursalId,
             provider: "permuta",
@@ -188,6 +194,17 @@ export const getVentaById = async (req, res) => {
     }
 };
 
+export const getVentaByTelefonoId = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const venta = await Venta.findOne({ where: { telefonoId: id } });
+        res.status(200).json(venta);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error al obtener la venta", error });
+    }
+};
+
 // Actualizar una venta
 export const updateVenta = async (req, res) => {
     try {
@@ -245,7 +262,6 @@ export const deleteVenta = async (req, res) => {
     }
 };
 
-/////////////////////FUTURA IMPLEMENTACION//////////////////////////
 // Obtener todas las ventas de una sucursal
 export const getVentasBySucursal = async (req, res) => {
     try {
@@ -257,11 +273,6 @@ export const getVentasBySucursal = async (req, res) => {
                     model: Telefono,
                     as: "telefono",
                     attributes: ["id", "model", "imei", "price"],
-                },
-                {
-                    model: Sucursal,
-                    as: "sucursal",
-                    attributes: ["id", "address"],
                 },
             ],
         });
@@ -275,7 +286,21 @@ export const getVentasBySucursal = async (req, res) => {
         });
     }
 };
+export const getVentasByNameSeller = async (req, res) => {
+    try {
+        const { nameSeller } = req.params;
+        const ventas = await Venta.findAll({ where: { vendedor: nameSeller } });
+        res.status(200).json(ventas);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error al obtener las ventas por vendedor",
+            error,
+        });
+    }
+};
 
+/////////////////////FUTURA IMPLEMENTACION//////////////////////////
 // Obtener todas las ventas mensuales
 export const getVentasMensuales = async (req, res) => {
     try {

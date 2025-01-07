@@ -10,6 +10,7 @@ import {
     getTelefonosDisponiblesBySucursal,
     getTelefonosEnGarantia,
     getTelefonosBySucursal,
+    getTelefonosDisponiblesYDepositoBySucursal,
 } from "../controllers/telefono.controllers.js";
 import authTokenJwt from "../middlewares/authTokenJwt.js";
 import authRole from "../middlewares/authRole.js";
@@ -28,8 +29,18 @@ router.get(
     getTelefonosDisponiblesBySucursal
 );
 router.get("/list/garantia", authTokenJwt, getTelefonosEnGarantia);
-router.put("/update/:id", authTokenJwt, updateTelefono);
-router.put("/change-status/:id", authTokenJwt, changeTelefonoStatus);
+router.get(
+    "/list/sucursal/:id/disponibles-deposito",
+    authTokenJwt,
+    getTelefonosDisponiblesYDepositoBySucursal
+);
+router.put("/update/:id", authTokenJwt, authRole(["admin"]), updateTelefono);
+router.put(
+    "/change-status/:id",
+    authTokenJwt,
+    authRole(["admin"]),
+    changeTelefonoStatus
+);
 router.delete("/delete/:id", authTokenJwt, authRole(["admin"]), deleteTelefono);
 
 export default router;

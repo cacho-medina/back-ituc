@@ -13,8 +13,13 @@ const Garantia = sequelize.define(
             type: DataTypes.STRING,
             allowNull: false,
         },
+        fechaIngreso: {
+            type: DataTypes.DATE,
+            allowNull: false,
+        },
         status: {
             type: DataTypes.ENUM("ingresado", "en proceso", "completado"),
+            defaultValue: "ingresado",
             allowNull: false,
         },
         sucursalId: {

@@ -25,6 +25,12 @@ const Telefono = sequelize.define(
             type: DataTypes.DOUBLE,
             allowNull: false,
         },
+        purchase_price: {
+            //solo llenar en ventas de permuta
+            type: DataTypes.DOUBLE,
+            allowNull: false,
+            defaultValue: 0,
+        },
         imei: {
             type: DataTypes.STRING,
             allowNull: false,
@@ -59,7 +65,7 @@ const Telefono = sequelize.define(
         },
         sucursalId: {
             type: DataTypes.UUID,
-            allowNull: false,
+            allowNull: true,
         },
     },
     {

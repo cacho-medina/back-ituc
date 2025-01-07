@@ -30,3 +30,4 @@ Venta.belongsTo(Telefono, { foreignKey: "telefonoId", as: "telefono" });
 Garantia.belongsTo(Sucursal, { foreignKey: "sucursalId", as: "sucursal" });
 //revisar relacion garantia y telefono
 Garantia.belongsTo(Telefono, { foreignKey: "telefonoId", as: "telefono" });
+Telefono.hasOne(Garantia, { foreignKey: "telefonoId", as: "garantia" });

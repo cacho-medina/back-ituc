@@ -37,6 +37,7 @@ export const login = async (req, res) => {
         res.status(200).json({
             message: `User logged in as ${user.role}!`,
             user: {
+                id: user.id,
                 email: user.email,
                 name: user.name,
                 role: user.role,
@@ -101,9 +102,7 @@ export const updateUser = async (req, res) => {
 
         await user.save();
 
-        res.status(200).json({
-            message: "User information updated successfully",
-        });
+        res.status(200).json(user);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Error updating user information" });
@@ -192,3 +191,5 @@ export const getUserById = async (req, res) => {
         res.status(500).json({ message: "Error retrieving user" });
     }
 };
+
+export const getSellers = async (req, res) => {};
