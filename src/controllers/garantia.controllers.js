@@ -198,7 +198,7 @@ export const updateResolucionGarantia = async (req, res) => {
                 garantia.telefonoId,
                 { transaction: t }
             );
-            telefonoOriginal.status = "no disponible";
+            telefonoOriginal.status = "reparacion";
             await telefonoOriginal.save({ transaction: t });
 
             const telefonoCambio = await Telefono.findByPk(cambioId, {
