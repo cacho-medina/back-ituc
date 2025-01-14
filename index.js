@@ -4,7 +4,7 @@ import sequelize from "./src/config/db.js";
 const PORT = process.env.PORT || 8000;
 
 sequelize
-    .sync({ force: false })
+    .sync({ force: true })
     .then(() => {
         console.log("Connected to PostgresDB");
         app.listen(PORT, () => {
