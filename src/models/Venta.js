@@ -21,18 +21,6 @@ const Venta = sequelize.define(
             type: DataTypes.STRING,
             allowNull: true,
         },
-        nombre_cliente: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        telefono_cliente: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
-        dni_cliente: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
         pago_usd: {
             type: DataTypes.DOUBLE,
             allowNull: true,
@@ -48,6 +36,10 @@ const Venta = sequelize.define(
         pago_transferencia: {
             type: DataTypes.DOUBLE,
             allowNull: true,
+        },
+        clienteId: {
+            type: DataTypes.UUID,
+            allowNull: false,
         },
         telefonoId: {
             //asociar a telefono

@@ -1,6 +1,8 @@
 import Telefono from "../models/Telefono.js";
 import Sucursal from "../models/Sucursal.js";
 import "../models/relations.js";
+import Cliente from "../models/Clientes.js";
+import ClienteTelefono from "../models/ClienteTelefono.js";
 
 // Crear un nuevo teléfono
 export const createTelefono = async (req, res) => {
@@ -94,16 +96,19 @@ export const getTelefonoById = async (req, res) => {
     try {
         const { id } = req.params;
         const telefono = await Telefono.findByPk(id, {
-            include: {
-                model: Sucursal,
-                as: "sucursal",
-                attributes: ["id", "address"],
-            },
+            include: [
+                {
+                    model: Sucursal,
+                    as: "sucursal",
+                    attributes: ["id", "address"],
+                },
+                {
+                    model: Cliente,
+                    as: "clientes",
+                    attributes: ["id", "nombre", "telefono", "dni"],
+                },
+            ],
         });
-
-        if (!telefono) {
-            return res.status(404).json({ message: "Teléfono no encontrado" });
-        }
 
         res.status(200).json(telefono);
     } catch (error) {
@@ -112,6 +117,30 @@ export const getTelefonoById = async (req, res) => {
             message: "Error al obtener el teléfono",
             error,
         });
+    }
+};
+
+export const getTelefonosByImei = async (req, res) => {
+    try {
+        const { imei } = req.params;
+        const telefono = await Telefono.findOne({ where: { imei } });
+        if (!telefono) {
+            return res.status(404).json({ message: "Teléfono no encontrado" });
+        }
+        const clienteAsociado = await ClienteTelefono.findOne({
+            where: { telefonoId: telefono.id },
+        });
+        if (!clienteAsociado) {
+            return res
+                .status(404)
+                .json({ message: "El telefono no tiene cliente asociado" });
+        }
+        const cliente = await Cliente.findByPk(clienteAsociado.clienteId);
+
+        res.status(200).json({ telefono, cliente });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error al obtener el teléfono" });
     }
 };
 

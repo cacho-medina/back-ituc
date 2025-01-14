@@ -58,7 +58,9 @@ const Telefono = sequelize.define(
                 "vendido",
                 "garantia",
                 "deposito",
-                "reparacion"
+                "reparacion",
+                "cambiado",
+                "no disponible"
             ),
             defaultValue: "disponible",
             allowNull: false,

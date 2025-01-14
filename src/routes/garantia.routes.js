@@ -8,6 +8,7 @@ import {
     updateStatusGarantia,
     getGarantiasBySucursal,
     getGarantiaByTelefonoId,
+    updateResolucionGarantia,
 } from "../controllers/garantia.controllers.js";
 import authTokenJwt from "../middlewares/authTokenJwt.js";
 import authRole from "../middlewares/authRole.js";
@@ -21,5 +22,6 @@ router.get("/telefono/:id", authTokenJwt, getGarantiaByTelefonoId);
 router.put("/update/:id", authTokenJwt, authRole(["admin"]), updateGarantia);
 router.put("/status/:id", authTokenJwt, updateStatusGarantia);
 router.delete("/delete/:id", authTokenJwt, authRole(["admin"]), deleteGarantia);
+router.put("/resolucion/:id", authTokenJwt, updateResolucionGarantia);
 
 export default router;

@@ -26,9 +26,17 @@ const Garantia = sequelize.define(
             type: DataTypes.UUID,
             allowNull: false,
         },
+        resolucion: {
+            type: DataTypes.ENUM("reparado", "reemplazado"),
+            allowNull: true,
+        },
         telefonoId: {
             type: DataTypes.UUID,
             allowNull: false,
+        },
+        telefonoCambioId: {
+            type: DataTypes.UUID,
+            allowNull: true,
         },
     },
     {

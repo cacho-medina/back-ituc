@@ -11,6 +11,7 @@ import {
     getTelefonosEnGarantia,
     getTelefonosBySucursal,
     getTelefonosDisponiblesYDepositoBySucursal,
+    getTelefonosByImei,
 } from "../controllers/telefono.controllers.js";
 import authTokenJwt from "../middlewares/authTokenJwt.js";
 import authRole from "../middlewares/authRole.js";
@@ -34,6 +35,7 @@ router.get(
     authTokenJwt,
     getTelefonosDisponiblesYDepositoBySucursal
 );
+router.get("/imei/:imei", authTokenJwt, getTelefonosByImei);
 router.put("/update/:id", authTokenJwt, authRole(["admin"]), updateTelefono);
 router.put(
     "/change-status/:id",

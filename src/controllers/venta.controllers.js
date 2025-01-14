@@ -3,6 +3,8 @@ import Telefono from "../models/Telefono.js";
 import Sucursal from "../models/Sucursal.js";
 import "../models/relations.js";
 import { Op } from "sequelize";
+import Cliente from "../models/Clientes.js";
+import ClienteTelefono from "../models/ClienteTelefono.js";
 
 // Crear una nueva venta
 export const createVenta = async (req, res) => {
@@ -29,15 +31,24 @@ export const createVenta = async (req, res) => {
         if (phoneForSale.status === "vendido") {
             return res.status(400).json({ message: "Telefono ya vendido" });
         }
+        let findCliente = await Cliente.findOne({
+            where: { dni: dni_cliente },
+        });
+        if (!findCliente) {
+            //registrar el cliente
+            findCliente = await Cliente.create({
+                nombre: nombre_cliente,
+                telefono: telefono_cliente,
+                dni: dni_cliente,
+            });
+        }
 
         //registra la venta
         const newVenta = await Venta.create({
             fecha: Date.now(),
             vendedor: vendedor || null,
             tipo_venta: "venta",
-            nombre_cliente,
-            telefono_cliente,
-            dni_cliente,
+            clienteId: findCliente.id,
             pago_usd,
             pago_pesos,
             pago_tarjeta,
@@ -49,6 +60,12 @@ export const createVenta = async (req, res) => {
         //actualiza el estado del telefono a vendido
         phoneForSale.status = "vendido";
         await phoneForSale.save();
+
+        //registra la relacion entre el cliente y el telefono
+        await ClienteTelefono.create({
+            clienteId: findCliente.id,
+            telefonoId: phoneForSale.id,
+        });
 
         res.status(201).json(newVenta);
     } catch (error) {
@@ -104,14 +121,24 @@ export const createPermuta = async (req, res) => {
             provider: "permuta",
         });
 
+        let findCliente = await Cliente.findOne({
+            where: { dni: dni_cliente },
+        });
+        if (!findCliente) {
+            //registrar el cliente
+            findCliente = await Cliente.create({
+                nombre: nombre_cliente,
+                telefono: telefono_cliente,
+                dni: dni_cliente,
+            });
+        }
+
         //registra la venta
         const newVenta = await Venta.create({
             fecha: Date.now(),
             vendedor: vendedor || null,
             tipo_venta: "permuta",
-            nombre_cliente,
-            telefono_cliente,
-            dni_cliente,
+            clienteId: findCliente.id,
             pago_usd,
             pago_pesos,
             pago_tarjeta,
@@ -123,6 +150,12 @@ export const createPermuta = async (req, res) => {
         //actualiza el estado del telefono a vendido
         phoneForSale.status = "vendido";
         await phoneForSale.save();
+
+        //registra la relacion entre el cliente y el telefono
+        await ClienteTelefono.create({
+            clienteId: findCliente.id,
+            telefonoId: phoneForSale.id,
+        });
 
         res.status(201).json(newVenta);
     } catch (error) {
@@ -148,6 +181,11 @@ export const getVentas = async (req, res) => {
                     model: Sucursal,
                     as: "sucursal",
                     attributes: ["id", "address"],
+                },
+                {
+                    model: Cliente,
+                    as: "cliente",
+                    attributes: ["id", "nombre", "telefono", "dni"],
                 },
             ],
             limit,
@@ -181,6 +219,11 @@ export const getVentaById = async (req, res) => {
                     as: "sucursal",
                     attributes: ["id", "address"],
                 },
+                {
+                    model: Cliente,
+                    as: "cliente",
+                    attributes: ["id", "nombre", "telefono", "dni"],
+                },
             ],
         });
 
@@ -197,7 +240,16 @@ export const getVentaById = async (req, res) => {
 export const getVentaByTelefonoId = async (req, res) => {
     try {
         const { id } = req.params;
-        const venta = await Venta.findOne({ where: { telefonoId: id } });
+        const venta = await Venta.findOne({
+            where: { telefonoId: id },
+            include: [
+                {
+                    model: Cliente,
+                    as: "cliente",
+                    attributes: ["id", "nombre", "telefono", "dni"],
+                },
+            ],
+        });
         res.status(200).json(venta);
     } catch (error) {
         console.error(error);
