@@ -51,7 +51,7 @@ export const createTelefono = async (req, res) => {
 export const getTelefonos = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 15;
+        const limit = parseInt(req.query.limit) || 25;
         const offset = (page - 1) * limit;
         const { count, rows: telefonos } = await Telefono.findAndCountAll({
             /*             include: {
@@ -200,19 +200,11 @@ export const getTelefonosDisponiblesYDepositoBySucursal = async (req, res) => {
         const telefonos = await Telefono.findAll({
             where: { sucursalId: id, status: ["disponible"] },
         });
-        if (telefonos.length === 0) {
-            return res
-                .status(404)
-                .json({ message: "No hay teléfonos disponibles o depositos" });
-        }
         //obtener los teléfonos en el deposito
         const telefonosDeposito = await Telefono.findAll({
             where: { status: ["deposito"] },
         });
-        //si no hay teléfonos en el deposito, retornar los teléfonos disponibles
-        if (telefonosDeposito.length === 0) {
-            return res.status(200).json(telefonos);
-        }
+
         //si hay teléfonos en el deposito, retornar los teléfonos disponibles y los teléfonos en el deposito
         res.status(200).json([...telefonos, ...telefonosDeposito]);
     } catch (error) {
