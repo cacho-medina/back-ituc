@@ -152,15 +152,12 @@ export const deleteUser = async (req, res) => {
 };
 
 export const getUsers = async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
+    /* const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
+    const offset = (page - 1) * limit; */
 
     try {
-        const { count, rows: users } = await User.findAndCountAll({
-            limit,
-            offset,
-        });
+        const users = await User.findAll();
 
         res.status(200).json(users);
     } catch (error) {
