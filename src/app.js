@@ -22,11 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(
     cors({
-        origin: [
-            "http://localhost:3000",
-            "https://app.ituc-cell.com",
-            "https://cotizador.ituc.com.ar",
-        ], // Permitir tu frontend
+        origin: ["http://localhost:3000", "https://app.ituc-cell.com"], // Permitir tu frontend
         methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Métodos permitidos
         credentials: true, // Si usas cookies o credenciales
     })

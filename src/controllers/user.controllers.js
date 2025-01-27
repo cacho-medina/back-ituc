@@ -38,9 +38,8 @@ export const login = async (req, res) => {
             maxAge: 1000 * 60 * 60 * 24 * 30, // 30 días en milisegundos
             httpOnly: true,
             secure: true, // true solo en producción
-            sameSite: "strict",
+            sameSite: "lax",
             path: "/",
-            domain: ".ituc-cell.com",
         });
 
         //actualmente se esta enviando el token dentro del cuerpo de la respuesta
