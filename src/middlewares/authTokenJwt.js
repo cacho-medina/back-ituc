@@ -1,7 +1,8 @@
 import jwt from "jsonwebtoken";
 
 const authTokenJwt = (req, res, next) => {
-    const token = req.cookies.accessToken;
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1]; // Obtiene el token después de 'Bearer '
 
     if (!token) {
         return res.status(401).json({ message: "Access token required" });

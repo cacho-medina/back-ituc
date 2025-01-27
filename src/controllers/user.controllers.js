@@ -39,6 +39,8 @@ export const login = async (req, res) => {
             secure: true, // true solo en producción
             sameSite: "none",
             path: "/",
+            priority: "high",
+            domain: ".ituc-cell.com",
         });
 
         //actualmente se esta enviando el token dentro del cuerpo de la respuesta
