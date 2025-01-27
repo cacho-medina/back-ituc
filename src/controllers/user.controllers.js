@@ -35,11 +35,10 @@ export const login = async (req, res) => {
         //enviar token en cabecera de la response mediante una cookie con el modulo cookie
 
         res.cookie("accessToken", token, {
+            maxAge: 60 * 60 * 24 * 365,
             httpOnly: true,
             secure: true,
             sameSite: "none",
-            expires: new Date(Date.now() + 60 * 60 * 24 * 10),
-            priority: "high",
         });
 
         //actualmente se esta enviando el token dentro del cuerpo de la respuesta
