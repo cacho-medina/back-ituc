@@ -40,6 +40,7 @@ export const login = async (req, res) => {
             sameSite: "none",
             maxAge: 60 * 60 * 24 * 10,
             path: "/",
+            priority: "high",
         });
 
         //actualmente se esta enviando el token dentro del cuerpo de la respuesta
