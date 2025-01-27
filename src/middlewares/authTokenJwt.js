@@ -1,14 +1,7 @@
 import jwt from "jsonwebtoken";
-import { parse } from "cookie";
 
 const authTokenJwt = (req, res, next) => {
-    const cookies = req.cookies.accessToken;
-
-    if (!cookies) {
-        return res.status(401).json({ message: "Access token required" });
-    }
-
-    const token = parse(cookies).accessToken;
+    const token = req.cookies.accessToken;
 
     if (!token) {
         return res.status(401).json({ message: "Access token required" });
