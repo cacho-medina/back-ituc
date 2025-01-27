@@ -23,7 +23,7 @@ router.post("/create", authTokenJwt, validacionTelefono, createTelefono);
 router.get("/list", authTokenJwt, getTelefonos);
 router.get("/list/sucursal/:id", authTokenJwt, getTelefonosBySucursal);
 router.get("/:id", authTokenJwt, getTelefonoById);
-router.get("/list/disponibles", authTokenJwt, getTelefonosDisponibles);
+router.get("/list/disponibles", getTelefonosDisponibles);
 router.get(
     "/list/disponibles/sucursal/:id",
     authTokenJwt,

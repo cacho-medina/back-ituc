@@ -35,10 +35,15 @@ export const login = async (req, res) => {
         //enviar token en cabecera de la response mediante una cookie con el modulo cookie
 
         res.cookie("accessToken", token, {
-            maxAge: 60 * 60 * 24 * 365,
+            maxAge: 1000 * 60 * 60 * 24 * 30, // 30 días en milisegundos
             httpOnly: true,
-            secure: true,
-            sameSite: "none",
+            secure: process.env.NODE_ENV === "production", // true solo en producción
+            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            path: "/",
+            domain:
+                process.env.NODE_ENV === "production"
+                    ? ".ituc-cell.com" // ajusta esto a tu dominio
+                    : "localhost",
         });
 
         //actualmente se esta enviando el token dentro del cuerpo de la respuesta
