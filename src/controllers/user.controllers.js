@@ -2,7 +2,6 @@ import User from "../models/User.js";
 import Sucursal from "../models/Sucursal.js";
 import bcrypt from "bcrypt";
 import generateToken from "../helpers/jwt/generateToken.js";
-import { serialize } from "cookie";
 import "../models/relations.js";
 
 export const login = async (req, res) => {
@@ -34,16 +33,14 @@ export const login = async (req, res) => {
         const token = generateToken(user.id, user.email, user.role);
 
         //enviar token en cabecera de la response mediante una cookie con el modulo cookie
-        //serializa el token
-        const serializedCookie = serialize("accessToken", token, {
+
+        res.cookie("accessToken", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "none",
+            secure: true,
+            sameSite: "strict",
             maxAge: 60 * 60 * 24 * 10,
             path: "/",
         });
-
-        res.setHeader("Set-Cookie", serializedCookie);
 
         //actualmente se esta enviando el token dentro del cuerpo de la respuesta
         res.status(200).json({
@@ -65,14 +62,7 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
     try {
-        const serializedCookie = serialize("accessToken", null, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
-            maxAge: 0,
-            path: "/",
-        });
-        res.setHeader("Set-Cookie", serializedCookie);
+        res.clearCookie("accessToken");
         res.status(200).json({ message: "User logged out" });
     } catch (error) {
         console.error(error);

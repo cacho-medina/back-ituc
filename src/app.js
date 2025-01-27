@@ -3,6 +3,7 @@ import cors from "cors";
 import morgan from "morgan";
 import path from "path";
 import { fileURLToPath } from "url";
+import cookieParser from "cookie-parser";
 
 const app = express();
 
@@ -16,6 +17,7 @@ import garantiaRoutes from "./routes/garantia.routes.js";
 //////////////////////MIDDLEWARES////////////////////////////////////
 app.use(morgan("dev"));
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(
