@@ -188,6 +188,7 @@ export const getVentas = async (req, res) => {
                     attributes: ["id", "nombre", "telefono", "dni"],
                 },
             ],
+            order: [["fecha", "DESC"]],
             limit,
             offset,
         });

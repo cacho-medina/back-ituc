@@ -2,7 +2,7 @@ import User from "../models/User.js";
 import Sucursal from "../models/Sucursal.js";
 import bcrypt from "bcrypt";
 import generateToken from "../helpers/jwt/generateToken.js";
-import { Op } from "sequelize";
+import { serialize } from "cookie";
 import "../models/relations.js";
 
 export const login = async (req, res) => {
@@ -33,6 +33,18 @@ export const login = async (req, res) => {
         // Generar token JWT
         const token = generateToken(user.id, user.email, user.role);
 
+        //enviar token en cabecera de la response mediante una cookie con el modulo cookie
+        //serializa el token
+        const serializedCookie = serialize("accessToken", token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 60 * 60 * 24 * 10,
+            path: "/",
+        });
+
+        res.setHeader("Set-Cookie", serializedCookie);
+
         //actualmente se esta enviando el token dentro del cuerpo de la respuesta
         res.status(200).json({
             message: `User logged in as ${user.role}!`,
@@ -44,11 +56,27 @@ export const login = async (req, res) => {
                 telefono: user.telefono,
                 sucursal: user.sucursalId,
             },
-            token, //borrar del cuerpo de response al entrar en production
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Error at login user" });
+    }
+};
+
+export const logout = async (req, res) => {
+    try {
+        const serializedCookie = serialize("accessToken", null, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 0,
+            path: "/",
+        });
+        res.setHeader("Set-Cookie", serializedCookie);
+        res.status(200).json({ message: "User logged out" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error at logout user" });
     }
 };
 

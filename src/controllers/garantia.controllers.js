@@ -53,6 +53,7 @@ export const getGarantias = async (req, res) => {
                     as: "telefonoCambio",
                 },
             ],
+            order: [["fechaIngreso", "DESC"]],
         });
         res.status(200).json(garantias);
     } catch (error) {
