@@ -38,8 +38,7 @@ export const login = async (req, res) => {
             httpOnly: true,
             secure: true,
             sameSite: "none",
-            maxAge: 60 * 60 * 24 * 10,
-            path: "/",
+            expires: new Date(Date.now() + 60 * 60 * 24 * 10),
             priority: "high",
         });
 
