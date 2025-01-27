@@ -37,7 +37,7 @@ export const login = async (req, res) => {
         //serializa el token
         const serializedCookie = serialize("accessToken", token, {
             httpOnly: true,
-            secure: true,
+            secure: process.env.NODE_ENV === "production",
             sameSite: "none",
             maxAge: 60 * 60 * 24 * 10,
             path: "/",
