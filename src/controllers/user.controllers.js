@@ -33,12 +33,11 @@ export const login = async (req, res) => {
         const token = generateToken(user.id, user.email, user.role);
 
         //enviar token en cabecera de la response mediante una cookie con el modulo cookie
-
         res.cookie("accessToken", token, {
             maxAge: 1000 * 60 * 60 * 24 * 30, // 30 días en milisegundos
             httpOnly: true,
             secure: true, // true solo en producción
-            sameSite: "lax",
+            sameSite: "none",
             path: "/",
         });
 
@@ -53,6 +52,7 @@ export const login = async (req, res) => {
                 telefono: user.telefono,
                 sucursal: user.sucursalId,
             },
+            token,
         });
     } catch (error) {
         console.error(error);
