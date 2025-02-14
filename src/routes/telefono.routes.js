@@ -12,10 +12,12 @@ import {
     getTelefonosBySucursal,
     getTelefonosDisponiblesYDepositoBySucursal,
     getTelefonosByImei,
+    uploadPhonesFromExcel,
 } from "../controllers/telefono.controllers.js";
 import authTokenJwt from "../middlewares/authTokenJwt.js";
 import authRole from "../middlewares/authRole.js";
 import validacionTelefono from "../helpers/validations/telefono.validations.js";
+import { uploadExcel } from "../middlewares/upload-file.js";
 
 const router = Router();
 
@@ -44,5 +46,13 @@ router.patch(
     changeTelefonoStatus
 );
 router.delete("/delete/:id", authTokenJwt, authRole(["admin"]), deleteTelefono);
+
+router.post(
+    "/import",
+    authTokenJwt,
+    authRole(["admin"]),
+    uploadExcel.single("file"),
+    uploadPhonesFromExcel
+);
 
 export default router;

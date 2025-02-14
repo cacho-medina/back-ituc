@@ -23,7 +23,7 @@ router.post(
 router.put(
     "/update/:id",
     authTokenJwt,
-    authRole(["superAdmin"]),
+    authRole(["admin"]),
     validacionSucursal,
     updateSucursales
 );

@@ -19,7 +19,7 @@ router.get("/", authTokenJwt, getGarantias);
 router.get("/registro/:id", authTokenJwt, getGarantiaById);
 router.get("/sucursal/:id", authTokenJwt, getGarantiasBySucursal);
 router.get("/telefono/:id", authTokenJwt, getGarantiaByTelefonoId);
-router.put("/update/:id", authTokenJwt, authRole(["admin"]), updateGarantia);
+router.put("/update/:id", authTokenJwt, updateGarantia);
 router.put("/status/:id", authTokenJwt, updateStatusGarantia);
 router.delete("/delete/:id", authTokenJwt, authRole(["admin"]), deleteGarantia);
 router.put("/resolucion/:id", authTokenJwt, updateResolucionGarantia);

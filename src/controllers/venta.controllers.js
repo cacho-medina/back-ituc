@@ -21,6 +21,7 @@ export const createVenta = async (req, res) => {
             pago_transferencia,
             telefonoId,
             fechaVenta,
+            sucursalId,
         } = req.body;
 
         //busca el telefono a vender
@@ -47,7 +48,7 @@ export const createVenta = async (req, res) => {
 
         //registra la venta
         const newVenta = await Venta.create({
-            fecha: formatISO(parse(fechaVenta, "yyyy-MM-dd", new Date())),
+            fecha: fechaVenta ? new Date(fechaVenta) : new Date(),
             vendedor: vendedor || null,
             tipo_venta: "venta",
             clienteId: findCliente.id,
@@ -56,7 +57,7 @@ export const createVenta = async (req, res) => {
             pago_tarjeta,
             pago_transferencia,
             telefonoId,
-            sucursalId: phoneForSale.sucursalId,
+            sucursalId: sucursalId || phoneForSale.sucursalId,
         });
 
         //actualiza el estado del telefono a vendido
@@ -123,9 +124,9 @@ export const createPermuta = async (req, res) => {
             details,
             sucursalId: phoneForSale.sucursalId,
             provider: "permuta",
-            fechaCarga: formatISO(
-                parse(fechaCargaTelefono, "yyyy-MM-dd", new Date())
-            ),
+            fechaCarga: fechaCargaTelefono
+                ? new Date(fechaCargaTelefono)
+                : new Date(),
         });
 
         let findCliente = await Cliente.findOne({
