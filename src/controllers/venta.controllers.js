@@ -5,6 +5,7 @@ import "../models/relations.js";
 import { Op } from "sequelize";
 import Cliente from "../models/Clientes.js";
 import ClienteTelefono from "../models/ClienteTelefono.js";
+import { formatISO, parse } from "date-fns";
 
 // Crear una nueva venta
 export const createVenta = async (req, res) => {
@@ -19,6 +20,7 @@ export const createVenta = async (req, res) => {
             pago_tarjeta,
             pago_transferencia,
             telefonoId,
+            fechaVenta,
         } = req.body;
 
         //busca el telefono a vender
@@ -45,7 +47,7 @@ export const createVenta = async (req, res) => {
 
         //registra la venta
         const newVenta = await Venta.create({
-            fecha: Date.now(),
+            fecha: formatISO(parse(fechaVenta, "yyyy-MM-dd", new Date())),
             vendedor: vendedor || null,
             tipo_venta: "venta",
             clienteId: findCliente.id,
@@ -93,6 +95,8 @@ export const createPermuta = async (req, res) => {
             pago_tarjeta,
             pago_transferencia,
             telefonoId,
+            fechaVenta,
+            fechaCargaTelefono,
         } = req.body;
 
         //busca el telefono a vender
@@ -119,6 +123,9 @@ export const createPermuta = async (req, res) => {
             details,
             sucursalId: phoneForSale.sucursalId,
             provider: "permuta",
+            fechaCarga: formatISO(
+                parse(fechaCargaTelefono, "yyyy-MM-dd", new Date())
+            ),
         });
 
         let findCliente = await Cliente.findOne({
@@ -135,7 +142,7 @@ export const createPermuta = async (req, res) => {
 
         //registra la venta
         const newVenta = await Venta.create({
-            fecha: Date.now(),
+            fecha: formatISO(parse(fechaVenta, "yyyy-MM-dd", new Date())),
             vendedor: vendedor || null,
             tipo_venta: "permuta",
             clienteId: findCliente.id,
@@ -164,18 +171,82 @@ export const createPermuta = async (req, res) => {
     }
 };
 
-// Obtener todas las ventas
+// Obtener todas las ventas, incluye paginacion y filtros para busqueda de ventas
 export const getVentas = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 25;
-        const offset = (page - 1) * limit;
+        const {
+            fromDate,
+            toDate,
+            minPrecio, // Cambiamos minMonto por minPrecio
+            maxPrecio, // Cambiamos maxMonto por maxPrecio
+            model,
+            page = 1,
+            limit = 20,
+        } = req.query;
+
+        // Construir objeto de filtros
+        const whereConditions = {};
+        const phoneWhereConditions = {};
+
+        // Filtro por fechas
+        if (fromDate || toDate) {
+            whereConditions.fecha = {};
+
+            if (fromDate && toDate) {
+                // Escenario 1: Filtrar entre dos fechas
+                whereConditions.fecha = {
+                    [Op.between]: [
+                        formatISO(parse(fromDate, "yyyy-MM-dd", new Date())),
+                        formatISO(parse(toDate, "yyyy-MM-dd", new Date())),
+                    ],
+                };
+            } else if (fromDate) {
+                // Escenario 2: Filtrar desde una fecha en adelante
+                whereConditions.fecha = {
+                    [Op.gte]: new Date(fromDate),
+                };
+            } else if (toDate) {
+                // Escenario 3: Filtrar hasta una fecha específica
+                whereConditions.fecha = {
+                    [Op.lte]: new Date(toDate),
+                };
+            }
+        }
+
+        // Filtro por modelo de teléfono
+        if (model) {
+            phoneWhereConditions.model = {
+                [Op.iLike]: `%${model}%`,
+            };
+        }
+
+        // Filtro por precio del teléfono
+        if (minPrecio) {
+            phoneWhereConditions.price = {
+                ...phoneWhereConditions.price,
+                [Op.gte]: parseFloat(minPrecio),
+            };
+        }
+        if (maxPrecio) {
+            phoneWhereConditions.price = {
+                ...phoneWhereConditions.price,
+                [Op.lte]: parseFloat(maxPrecio),
+            };
+        }
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
         const { count, rows: ventas } = await Venta.findAndCountAll({
+            where: whereConditions,
             include: [
                 {
                     model: Telefono,
                     as: "telefono",
                     attributes: ["id", "model", "imei", "price"],
+                    where:
+                        Object.keys(phoneWhereConditions).length > 0
+                            ? phoneWhereConditions
+                            : undefined,
                 },
                 {
                     model: Sucursal,
@@ -189,14 +260,17 @@ export const getVentas = async (req, res) => {
                 },
             ],
             order: [["fecha", "DESC"]],
-            limit,
-            offset,
+            limit: parseInt(limit),
+            offset: offset,
         });
+
         res.status(200).json({
             ventas,
             totalVentas: count,
-            currentPage: page,
-            totalPages: Math.ceil(count / limit),
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(count / parseInt(limit)),
+            hasNextPage: offset + parseInt(limit) < count,
+            hasPrevPage: parseInt(page) > 1,
         });
     } catch (error) {
         console.error(error);

@@ -22,7 +22,7 @@ router.post("/logout", authTokenJwt, logout);
 router.post("/register", validacionUsuario, registerUser);
 router.post("/register-admin", registerUser);
 router.put("/update/:id", authTokenJwt, authRole(["admin"]), updateUser);
-router.put(
+router.patch(
     "/change-status/:id",
     authTokenJwt,
     authRole(["admin"]),

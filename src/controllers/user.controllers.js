@@ -32,17 +32,6 @@ export const login = async (req, res) => {
         // Generar token JWT
         const token = generateToken(user.id, user.email, user.role);
 
-        //enviar token en cabecera de la response mediante una cookie con el modulo cookie
-        res.cookie("accessToken", token, {
-            maxAge: 1000 * 60 * 60 * 24 * 30, // 30 días en milisegundos
-            httpOnly: true,
-            secure: true, // true solo en producción
-            sameSite: "none",
-            path: "/",
-            priority: "high",
-            domain: ".ituc-cell.com",
-        });
-
         //actualmente se esta enviando el token dentro del cuerpo de la respuesta
         res.status(200).json({
             message: `User logged in as ${user.role}!`,

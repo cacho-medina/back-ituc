@@ -52,6 +52,10 @@ const Telefono = sequelize.define(
             type: DataTypes.STRING,
             allowNull: true,
         },
+        fechaCarga: {
+            type: DataTypes.DATE,
+            allowNull: false,
+        },
         status: {
             type: DataTypes.ENUM(
                 "disponible",

@@ -37,7 +37,7 @@ router.get(
 );
 router.get("/imei/:imei", authTokenJwt, getTelefonosByImei);
 router.put("/update/:id", authTokenJwt, authRole(["admin"]), updateTelefono);
-router.put(
+router.patch(
     "/change-status/:id",
     authTokenJwt,
     authRole(["admin"]),

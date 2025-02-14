@@ -3,6 +3,8 @@ import Sucursal from "../models/Sucursal.js";
 import "../models/relations.js";
 import Cliente from "../models/Clientes.js";
 import ClienteTelefono from "../models/ClienteTelefono.js";
+import { formatISO, parse } from "date-fns";
+import { Op } from "sequelize";
 
 // Crear un nuevo teléfono
 export const createTelefono = async (req, res) => {
@@ -19,6 +21,7 @@ export const createTelefono = async (req, res) => {
             details,
             status,
             sucursalId,
+            fechaCarga,
         } = req.body;
 
         const finded = await Telefono.findOne({ where: { imei } });
@@ -38,6 +41,7 @@ export const createTelefono = async (req, res) => {
             details,
             status,
             sucursalId: sucursalId || null,
+            fechaCarga: formatISO(parse(fechaCarga, "yyyy-MM-dd", new Date())),
         });
 
         res.status(201).json(newTelefono);
@@ -50,23 +54,106 @@ export const createTelefono = async (req, res) => {
 // Obtener todos los teléfonos
 export const getTelefonos = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 25;
-        const offset = (page - 1) * limit;
+        const {
+            fromDate,
+            toDate,
+            model,
+            imei,
+            minPrecio,
+            maxPrecio,
+            provider,
+            status,
+            page = 1,
+            limit = 25,
+        } = req.query;
+
+        // Construir objeto de filtros
+        const whereConditions = {};
+
+        // Filtro por fechas de carga
+        if (fromDate || toDate) {
+            whereConditions.fechaCarga = {};
+
+            if (fromDate && toDate) {
+                whereConditions.fechaCarga = {
+                    [Op.between]: [
+                        formatISO(parse(fromDate, "yyyy-MM-dd", new Date())),
+                        formatISO(parse(toDate, "yyyy-MM-dd", new Date())),
+                    ],
+                };
+            } else if (fromDate) {
+                whereConditions.fechaCarga = {
+                    [Op.gte]: formatISO(
+                        parse(fromDate, "yyyy-MM-dd", new Date())
+                    ),
+                };
+            } else if (toDate) {
+                whereConditions.fechaCarga = {
+                    [Op.lte]: formatISO(
+                        parse(toDate, "yyyy-MM-dd", new Date())
+                    ),
+                };
+            }
+        }
+
+        // Filtro por modelo
+        if (model) {
+            whereConditions.model = {
+                [Op.iLike]: `%${model}%`,
+            };
+        }
+
+        // Filtro por IMEI
+        if (imei) {
+            whereConditions.imei = {
+                [Op.iLike]: `%${imei}%`,
+            };
+        }
+
+        // Filtro por precio
+        if (minPrecio || maxPrecio) {
+            whereConditions.price = {};
+            if (minPrecio) {
+                whereConditions.price[Op.gte] = parseFloat(minPrecio);
+            }
+            if (maxPrecio) {
+                whereConditions.price[Op.lte] = parseFloat(maxPrecio);
+            }
+        }
+
+        // Filtro por proveedor
+        if (provider) {
+            whereConditions.provider = provider;
+        }
+
+        // Filtro por status
+        if (status) {
+            whereConditions.status = status;
+        }
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
         const { count, rows: telefonos } = await Telefono.findAndCountAll({
-            /*             include: {
-                model: Sucursal,
-                as: "sucursal",
-                attributes: ["address"],
-            }, */
-            limit,
-            offset,
+            where: whereConditions,
+            include: [
+                {
+                    model: Sucursal,
+                    as: "sucursal",
+                    attributes: ["id", "address"],
+                },
+            ],
+            order: [["fechaCarga", "DESC"]],
+            limit: parseInt(limit),
+            offset: offset,
         });
+
         res.status(200).json({
             telefonos,
             totalTelefonos: count,
-            currentPage: page,
-            totalPages: Math.ceil(count / limit),
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(count / parseInt(limit)),
+            hasNextPage: offset + parseInt(limit) < count,
+            hasPrevPage: parseInt(page) > 1,
         });
     } catch (error) {
         console.error(error);
@@ -232,6 +319,7 @@ export const updateTelefono = async (req, res) => {
             details,
             status,
             sucursalId,
+            fechaCarga,
         } = req.body;
 
         const telefono = await Telefono.findByPk(id);
@@ -251,6 +339,9 @@ export const updateTelefono = async (req, res) => {
         telefono.details = details || telefono.details;
         telefono.status = status || telefono.status;
         telefono.sucursalId = sucursalId || telefono.sucursalId;
+        telefono.fechaCarga =
+            formatISO(parse(fechaCarga, "yyyy-MM-dd", new Date())) ||
+            telefono.fechaCarga;
 
         await telefono.save();
 
