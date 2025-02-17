@@ -7,6 +7,7 @@ import { formatISO, parse } from "date-fns";
 import { Op } from "sequelize";
 import ExcelJS from "exceljs";
 import fs from "fs";
+import Venta from "../models/Venta.js";
 
 // Crear un nuevo teléfono
 export const createTelefono = async (req, res) => {
@@ -236,105 +237,79 @@ export const getTelefonosByImei = async (req, res) => {
 // Obtener todos los teléfonos disponibles
 export const getTelefonosDisponibles = async (req, res) => {
     try {
-        const {
-            fromDate,
-            toDate,
-            model,
-            imei,
-            minPrecio,
-            maxPrecio,
-            provider,
-            status,
-            page = 1,
-            limit = 25,
-        } = req.query;
-
-        // Construir objeto de filtros
-        const whereConditions = { status: "disponible" };
-
-        // Filtro por fechas de carga
-        if (fromDate || toDate) {
-            whereConditions.fechaCarga = {};
-
-            if (fromDate && toDate) {
-                whereConditions.fechaCarga = {
-                    [Op.between]: [
-                        formatISO(parse(fromDate, "yyyy-MM-dd", new Date())),
-                        formatISO(parse(toDate, "yyyy-MM-dd", new Date())),
-                    ],
-                };
-            } else if (fromDate) {
-                whereConditions.fechaCarga = {
-                    [Op.gte]: formatISO(
-                        parse(fromDate, "yyyy-MM-dd", new Date())
-                    ),
-                };
-            } else if (toDate) {
-                whereConditions.fechaCarga = {
-                    [Op.lte]: formatISO(
-                        parse(toDate, "yyyy-MM-dd", new Date())
-                    ),
-                };
-            }
-        }
-
-        // Filtro por modelo
-        if (model) {
-            whereConditions.model = {
-                [Op.iLike]: `%${model}%`,
-            };
-        }
-
-        // Filtro por IMEI
-        if (imei) {
-            whereConditions.imei = {
-                [Op.iLike]: `%${imei}%`,
-            };
-        }
-
-        // Filtro por precio
-        if (minPrecio || maxPrecio) {
-            whereConditions.price = {};
-            if (minPrecio) {
-                whereConditions.price[Op.gte] = parseFloat(minPrecio);
-            }
-            if (maxPrecio) {
-                whereConditions.price[Op.lte] = parseFloat(maxPrecio);
-            }
-        }
-
-        // Filtro por proveedor
-        if (provider) {
-            whereConditions.provider = provider;
-        }
-
-        // Filtro por status
-        if (status) {
-            whereConditions.status = status;
-        }
-
-        const offset = (parseInt(page) - 1) * parseInt(limit);
-        const { count, rows: telefonos } = await Telefono.findAndCountAll({
-            where: whereConditions,
-            order: [["fechaCarga", "DESC"]],
-            limit: parseInt(limit),
-            offset: offset,
+        const telefonos = await Telefono.findAll({
+            where: { status: "disponible" },
         });
-
-        res.status(200).json({
-            telefonos,
-            totalTelefonos: count,
-            currentPage: parseInt(page),
-            totalPages: Math.ceil(count / parseInt(limit)),
-            hasNextPage: offset + parseInt(limit) < count,
-            hasPrevPage: parseInt(page) > 1,
-        });
+        res.status(200).json(telefonos);
     } catch (error) {
         console.error(error);
         res.status(500).json({
             message: "Error al obtener los teléfonos disponibles",
             error,
         });
+    }
+};
+
+export const getTelefonoByImeiModel = async (req, res) => {
+    const { imei, model } = req.params;
+    try {
+        const telefono = await Telefono.findOne({
+            where: {
+                model: {
+                    [Op.iLike]: model,
+                },
+                imei: {
+                    [Op.like]: `%${imei}`, // Busca IMEI que termine con los dígitos proporcionados
+                },
+            },
+        });
+        if (!telefono) {
+            return res.status(404).json({ message: "Telefono no encontrado" });
+        }
+        if (telefono.status !== "vendido") {
+            return res
+                .status(400)
+                .json({ message: `El telefono esta ${telefono.status}` });
+        }
+        const infoVenta = await Venta.findOne({
+            where: { telefonoId: telefono.id },
+            include: [
+                {
+                    model: Cliente,
+                    as: "cliente",
+                    attributes: ["nombre", "telefono", "dni"],
+                },
+            ],
+        });
+        if (!infoVenta) {
+            return res
+                .status(404)
+                .json({ message: "El telefono no tiene una venta asociada" });
+        }
+        res.status(200).json({
+            telefono: {
+                id: telefono.id,
+                imei: telefono.imei,
+                model: telefono.model,
+                price: telefono.price,
+                sucursalId: telefono.sucursalId,
+            },
+            infoVenta: {
+                cliente: infoVenta.cliente,
+                fechaVenta: infoVenta.fecha,
+                tipo: infoVenta.tipo_venta,
+                vendedor: infoVenta.vendedor,
+                pago: {
+                    usd: infoVenta.pago_usd,
+                    pesos: infoVenta.pago_pesos,
+                    tarjeta: infoVenta.pago_tarjeta,
+                    transferencia: infoVenta.pago_transferencia,
+                },
+            },
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error al obtener el telefono" });
     }
 };
 
@@ -479,8 +454,8 @@ export const deleteTelefono = async (req, res) => {
         if (!telefono) {
             return res.status(404).json({ message: "Teléfono no encontrado" });
         }
-
         await telefono.destroy();
+        await ClienteTelefono.destroy({ where: { telefonoId: id } });
         res.status(200).json({ message: "Teléfono eliminado correctamente" });
     } catch (error) {
         console.error(error);
@@ -497,6 +472,14 @@ export const uploadPhonesFromExcel = async (req, res) => {
             return res
                 .status(400)
                 .json({ message: "No se ha subido ningún archivo" });
+        }
+
+        const { sucursalId } = req.body;
+
+        // Verificar si la sucursal existe
+        const sucursal = await Sucursal.findByPk(sucursalId);
+        if (!sucursal) {
+            return res.status(400).json({ message: "La sucursal no existe" });
         }
 
         const workbook = new ExcelJS.Workbook();
@@ -647,7 +630,7 @@ export const uploadPhonesFromExcel = async (req, res) => {
                 details: product.details || null,
                 status: product.status,
                 fechaCarga: new Date(),
-                sucursalId: null, // Por defecto los teléfonos importados no tienen sucursal asignada
+                sucursalId: sucursalId || null,
             })),
             {
                 validate: true,

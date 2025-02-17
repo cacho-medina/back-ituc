@@ -13,6 +13,7 @@ import {
     getTelefonosDisponiblesYDepositoBySucursal,
     getTelefonosByImei,
     uploadPhonesFromExcel,
+    getTelefonoByImeiModel,
 } from "../controllers/telefono.controllers.js";
 import authTokenJwt from "../middlewares/authTokenJwt.js";
 import authRole from "../middlewares/authRole.js";
@@ -54,5 +55,7 @@ router.post(
     uploadExcel.single("file"),
     uploadPhonesFromExcel
 );
+
+router.get("/imei/:imei/model/:model", authTokenJwt, getTelefonoByImeiModel);
 
 export default router;

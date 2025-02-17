@@ -13,6 +13,7 @@ import sucursalRoutes from "./routes/sucursal.routes.js";
 import telefonoRoutes from "./routes/telefono.routes.js";
 import ventasRoutes from "./routes/venta.routes.js";
 import garantiaRoutes from "./routes/garantia.routes.js";
+import clienteRoutes from "./routes/cliente.routes.js";
 
 //////////////////////MIDDLEWARES////////////////////////////////////
 app.use(morgan("dev"));
@@ -42,5 +43,6 @@ app.use(`${process.env.API_VERSION}/sucursal`, sucursalRoutes);
 app.use(`${process.env.API_VERSION}/telefono`, telefonoRoutes);
 app.use(`${process.env.API_VERSION}/venta`, ventasRoutes);
 app.use(`${process.env.API_VERSION}/garantia`, garantiaRoutes);
+app.use(`${process.env.API_VERSION}/cliente`, clienteRoutes);
 
 export default app;

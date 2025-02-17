@@ -7,16 +7,33 @@ import Cliente from "../models/Clientes.js";
 import ClienteTelefono from "../models/ClienteTelefono.js";
 
 export const createGarantia = async (req, res) => {
-    const { details, sucursalId, telefonoId } = req.body;
+    const { details, sucursalId, telefonoId, imei } = req.body;
     try {
         const telefono = await Telefono.findByPk(telefonoId);
         if (!telefono) {
-            return res.status(400).json({ message: "El telefono no existe" });
+            /* return res.status(400).json({ message: "El telefono no existe" }); */
+            isRegistered = false;
+            mensajeRespuesta.message =
+                "El telefono no esta registrado en la base de datos, verificar manualmente en Excel.";
+            const garantia = await Garantia.create({
+                details,
+                status: "ingresado",
+                fechaIngreso: new Date(),
+                sucursalId,
+                telefonoId,
+                telefonoCambioId: null,
+            });
         }
-        if (telefono.status !== "vendido" && telefono.status !== "cambiado") {
-            return res
+
+        if (
+            telefono &&
+            telefono.status !== "vendido" &&
+            telefono.status !== "cambiado" &&
+            telefono.status !== "no disponible"
+        ) {
+            /* return res
                 .status(400)
-                .json({ message: "El telefono no fue vendido o cambiado" });
+                .json({ message: "El telefono no fue vendido o cambiado" }); */
         }
         const garantiaExists = await Garantia.findOne({
             where: { telefonoId },
@@ -81,7 +98,40 @@ export const getGarantiaById = async (req, res) => {
         if (!garantia) {
             return res.status(404).json({ message: "Garantia no encontrada" });
         }
-        res.status(200).json(garantia);
+        const infoVenta = await Venta.findOne({
+            where: { telefonoId: garantia.telefonoId },
+            include: [
+                {
+                    model: Cliente,
+                    as: "cliente",
+                    attributes: ["nombre", "telefono", "dni"],
+                },
+            ],
+        });
+        if (!infoVenta) {
+            return res
+                .status(404)
+                .json({ message: "La garantia no tiene una venta asociada" });
+        }
+        res.status(200).json({
+            garantia,
+            infoVenta: {
+                fechaVenta: infoVenta.fecha,
+                tipo: infoVenta.tipo_venta,
+                vendedor: infoVenta.vendedor,
+                cliente: {
+                    nombre: infoVenta.cliente.nombre,
+                    telefono: infoVenta.cliente.telefono,
+                    dni: infoVenta.cliente.dni,
+                },
+                pago: {
+                    usd: infoVenta.pago_usd,
+                    pesos: infoVenta.pago_pesos,
+                    tarjeta: infoVenta.pago_tarjeta,
+                    transferencia: infoVenta.pago_transferencia,
+                },
+            },
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({
@@ -194,7 +244,7 @@ export const updateResolucionGarantia = async (req, res) => {
             const cliente = await ClienteTelefono.findOne({
                 where: { telefonoId: garantia.telefonoId },
             });
-            // Marcar teléfono original como no disponible
+            // Marcar teléfono original como reparacion
             const telefonoOriginal = await Telefono.findByPk(
                 garantia.telefonoId,
                 { transaction: t }
@@ -287,6 +337,58 @@ export const getHistorialCliente = async (req, res) => {
         console.error(error);
         res.status(500).json({
             message: "Error al obtener el historial del cliente",
+        });
+    }
+};
+
+export const registerTelefonoCliente = async (req, res) => {
+    // Iniciar transacción
+    const t = await sequelize.transaction();
+
+    try {
+        const { telefono, cliente } = req.body;
+        let clientId;
+
+        const clientExists = await Cliente.findOne({
+            where: { dni: cliente.dni },
+            transaction: t,
+        });
+
+        if (!clientExists) {
+            const newClient = await Cliente.create(
+                {
+                    nombre: cliente.nombre,
+                    dni: cliente.dni,
+                    telefono: cliente.telefono,
+                },
+                { transaction: t }
+            );
+            clientId = newClient.id;
+        } else {
+            clientId = clientExists.id;
+        }
+
+        const newTelefono = await Telefono.create(telefono, { transaction: t });
+
+        await ClienteTelefono.create(
+            {
+                clienteId: clientId,
+                telefonoId: newTelefono.id,
+            },
+            { transaction: t }
+        );
+
+        // Confirmar transacción
+        await t.commit();
+
+        res.status(201).json(newTelefono);
+    } catch (error) {
+        // Revertir transacción en caso de error
+        await t.rollback();
+        console.error(error);
+        res.status(500).json({
+            message: "Error al registrar el telefono al cliente",
+            error,
         });
     }
 };

@@ -56,7 +56,7 @@ export const createVenta = async (req, res) => {
             pago_pesos,
             pago_tarjeta,
             pago_transferencia,
-            telefonoId,
+            telefonoId: phoneForSale.id,
             sucursalId: sucursalId || phoneForSale.sucursalId,
         });
 
@@ -96,8 +96,8 @@ export const createPermuta = async (req, res) => {
             pago_tarjeta,
             pago_transferencia,
             telefonoId,
-            fechaVenta,
-            fechaCargaTelefono,
+            fecha,
+            sucursalId,
         } = req.body;
 
         //busca el telefono a vender
@@ -122,11 +122,9 @@ export const createPermuta = async (req, res) => {
             storage_capacity,
             status: "deposito",
             details,
-            sucursalId: phoneForSale.sucursalId,
+            sucursalId: sucursalId || phoneForSale.sucursalId,
             provider: "permuta",
-            fechaCarga: fechaCargaTelefono
-                ? new Date(fechaCargaTelefono)
-                : new Date(),
+            fechaCarga: fecha ? new Date(fecha) : new Date(),
         });
 
         let findCliente = await Cliente.findOne({
@@ -143,8 +141,8 @@ export const createPermuta = async (req, res) => {
 
         //registra la venta
         const newVenta = await Venta.create({
-            fecha: formatISO(parse(fechaVenta, "yyyy-MM-dd", new Date())),
-            vendedor: vendedor || null,
+            fecha: fecha ? new Date(fecha) : new Date(),
+            vendedor: vendedor || "no especificado",
             tipo_venta: "permuta",
             clienteId: findCliente.id,
             pago_usd,
@@ -152,7 +150,10 @@ export const createPermuta = async (req, res) => {
             pago_tarjeta,
             pago_transferencia,
             telefonoId,
-            sucursalId: phoneForSale.sucursalId,
+            sucursalId: sucursalId || phoneForSale.sucursalId,
+            telefonoPermutado_model: newPhone.model,
+            telefonoPermutado_imei: newPhone.imei,
+            telefonoPermutado_cotizacion: newPhone.purchase_price,
         });
 
         //actualiza el estado del telefono a vendido
@@ -380,6 +381,17 @@ export const deleteVenta = async (req, res) => {
         const venta = await Venta.findByPk(id);
         if (!venta) {
             return res.status(404).json({ message: "Venta no encontrada" });
+        }
+        const cliente = await Cliente.findByPk(venta.clienteId);
+        if (cliente) {
+            await ClienteTelefono.destroy({
+                where: { clienteId: cliente.id, telefonoId: venta.telefonoId },
+            });
+        }
+        const telefono = await Telefono.findByPk(venta.telefonoId);
+        if (telefono) {
+            telefono.status = "disponible";
+            await telefono.save();
         }
 
         await venta.destroy();

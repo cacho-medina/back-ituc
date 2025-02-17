@@ -37,6 +37,18 @@ const Venta = sequelize.define(
             type: DataTypes.DOUBLE,
             allowNull: true,
         },
+        telefonoPermutado_model: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        telefonoPermutado_imei: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        telefonoPermutado_cotizacion: {
+            type: DataTypes.DOUBLE,
+            allowNull: true,
+        },
         clienteId: {
             type: DataTypes.UUID,
             allowNull: false,
