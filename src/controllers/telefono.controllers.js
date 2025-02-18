@@ -555,6 +555,7 @@ export const uploadPhonesFromExcel = async (req, res) => {
                 const storage_capacity = row["capacidad"];
                 const reference = row["referencias"];
                 const details = row["detalles"];
+                const fechaCarga = row["fecha de ingreso"];
                 //se valida que los datos sean correctos
 
                 if (
@@ -577,8 +578,11 @@ export const uploadPhonesFromExcel = async (req, res) => {
                     price,
                     imei,
                     provider,
-                    status,
+                    status: status.toLowerCase(),
                     storage_capacity,
+                    reference,
+                    details,
+                    fechaCarga,
                 };
             })
             .filter((product) => product !== null); //se filtra los productos que no son correctos
@@ -626,10 +630,10 @@ export const uploadPhonesFromExcel = async (req, res) => {
                 imei: product.imei,
                 provider: product.provider,
                 storage_capacity: product.storage_capacity,
-                references: product.references || null,
+                references: product.reference || null,
                 details: product.details || null,
                 status: product.status,
-                fechaCarga: new Date(),
+                fechaCarga: product.fechaCarga || new Date(),
                 sucursalId: sucursalId || null,
             })),
             {
