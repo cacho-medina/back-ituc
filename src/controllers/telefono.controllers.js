@@ -66,12 +66,40 @@ export const getTelefonos = async (req, res) => {
             maxPrecio,
             provider,
             status,
+            sort,
             page = 1,
             limit = 20,
         } = req.query;
 
         // Construir objeto de filtros
         const whereConditions = {};
+
+        // Configuración del ordenamiento
+        let order = [];
+
+        switch (sort) {
+            case "date_desc":
+                order = [["fechaCarga", "DESC"]];
+                break;
+            case "date_asc":
+                order = [["fechaCarga", "ASC"]];
+                break;
+            case "name_desc":
+                order = [["model", "DESC"]];
+                break;
+            case "name_asc":
+                order = [["model", "ASC"]];
+                break;
+            case "price_desc":
+                order = [["price", "DESC"]];
+                break;
+            case "price_asc":
+                order = [["price", "ASC"]];
+                break;
+            default:
+                order = [["fechaCarga", "DESC"]];
+                break;
+        }
 
         // Filtro por fechas de carga
         if (fromDate || toDate) {
@@ -145,7 +173,7 @@ export const getTelefonos = async (req, res) => {
                     attributes: ["id", "address"],
                 },
             ],
-            order: [["fechaCarga", "DESC"]],
+            order: order,
             limit: parseInt(limit),
             offset: offset,
         });
@@ -157,6 +185,7 @@ export const getTelefonos = async (req, res) => {
             totalPages: Math.ceil(count / parseInt(limit)),
             hasNextPage: offset + parseInt(limit) < count,
             hasPrevPage: parseInt(page) > 1,
+            sort,
         });
     } catch (error) {
         console.error(error);
@@ -252,11 +281,12 @@ export const getTelefonosDisponibles = async (req, res) => {
 
 export const getTelefonoByImeiModel = async (req, res) => {
     const { imei, model } = req.params;
+
     try {
         const telefono = await Telefono.findOne({
             where: {
                 model: {
-                    [Op.iLike]: model,
+                    [Op.iLike]: `%${model}%`,
                 },
                 imei: {
                     [Op.like]: `%${imei}`, // Busca IMEI que termine con los dígitos proporcionados
@@ -578,7 +608,7 @@ export const uploadPhonesFromExcel = async (req, res) => {
                     price,
                     imei,
                     provider,
-                    status: status.toLowerCase(),
+                    status,
                     storage_capacity,
                     reference,
                     details,
@@ -616,7 +646,8 @@ export const uploadPhonesFromExcel = async (req, res) => {
         if (existingPhones.length > 0) {
             const duplicatedImeis = existingPhones.map((phone) => phone.imei);
             return res.status(400).json({
-                message: "Los siguientes IMEI ya existen en la base de datos",
+                message:
+                    "Hay imeis de telefonos que ya existen en la base de datos",
                 duplicados: duplicatedImeis,
             });
         }
@@ -632,7 +663,7 @@ export const uploadPhonesFromExcel = async (req, res) => {
                 storage_capacity: product.storage_capacity,
                 references: product.reference || null,
                 details: product.details || null,
-                status: product.status,
+                status: product.status.toLowerCase(),
                 fechaCarga: product.fechaCarga || new Date(),
                 sucursalId: sucursalId || null,
             })),

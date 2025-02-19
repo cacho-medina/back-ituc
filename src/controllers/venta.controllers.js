@@ -179,9 +179,8 @@ export const getVentas = async (req, res) => {
         const {
             fromDate,
             toDate,
-            minPrecio, // Cambiamos minMonto por minPrecio
-            maxPrecio, // Cambiamos maxMonto por maxPrecio
             model,
+            imei,
             page = 1,
             limit = 20,
         } = req.query;
@@ -222,17 +221,10 @@ export const getVentas = async (req, res) => {
             };
         }
 
-        // Filtro por precio del teléfono
-        if (minPrecio) {
-            phoneWhereConditions.price = {
-                ...phoneWhereConditions.price,
-                [Op.gte]: parseFloat(minPrecio),
-            };
-        }
-        if (maxPrecio) {
-            phoneWhereConditions.price = {
-                ...phoneWhereConditions.price,
-                [Op.lte]: parseFloat(maxPrecio),
+        // Filtro por IMEI
+        if (imei) {
+            phoneWhereConditions.imei = {
+                [Op.iLike]: `%${imei}%`,
             };
         }
 
@@ -244,7 +236,16 @@ export const getVentas = async (req, res) => {
                 {
                     model: Telefono,
                     as: "telefono",
-                    attributes: ["id", "model", "imei", "price"],
+                    attributes: [
+                        "id",
+                        "model",
+                        "imei",
+                        "price",
+                        "fechaCarga",
+                        "storage_capacity",
+                        "color",
+                        "provider",
+                    ],
                     where:
                         Object.keys(phoneWhereConditions).length > 0
                             ? phoneWhereConditions
