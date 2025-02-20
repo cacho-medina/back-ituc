@@ -5,6 +5,8 @@ import "../models/relations.js";
 import sequelize from "../config/db.js";
 import Cliente from "../models/Clientes.js";
 import ClienteTelefono from "../models/ClienteTelefono.js";
+import { formatISO, parse } from "date-fns";
+import { Op } from "sequelize";
 
 export const createGarantia = async (req, res) => {
     const { details, sucursalId, telefonoId, imei } = req.body;
@@ -59,11 +61,70 @@ export const createGarantia = async (req, res) => {
 };
 export const getGarantias = async (req, res) => {
     try {
-        const garantias = await Garantia.findAll({
+        const {
+            fromDate,
+            toDate,
+            model,
+            imei,
+            page = 1,
+            limit = 20,
+        } = req.query;
+
+        // Construir objeto de filtros
+        const whereConditions = {};
+        const phoneWhereConditions = {};
+
+        // Filtro por fechas de ingreso
+        if (fromDate || toDate) {
+            whereConditions.fechaIngreso = {};
+
+            if (fromDate && toDate) {
+                whereConditions.fechaIngreso = {
+                    [Op.between]: [
+                        formatISO(parse(fromDate, "yyyy-MM-dd", new Date())),
+                        formatISO(parse(toDate, "yyyy-MM-dd", new Date())),
+                    ],
+                };
+            } else if (fromDate) {
+                whereConditions.fechaIngreso = {
+                    [Op.gte]: formatISO(
+                        parse(fromDate, "yyyy-MM-dd", new Date())
+                    ),
+                };
+            } else if (toDate) {
+                whereConditions.fechaIngreso = {
+                    [Op.lte]: formatISO(
+                        parse(toDate, "yyyy-MM-dd", new Date())
+                    ),
+                };
+            }
+        }
+
+        // Filtros para el teléfono
+        if (model) {
+            phoneWhereConditions.model = {
+                [Op.iLike]: `%${model}%`,
+            };
+        }
+
+        if (imei) {
+            phoneWhereConditions.imei = {
+                [Op.iLike]: `%${imei}%`,
+            };
+        }
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        const { count, rows: garantias } = await Garantia.findAndCountAll({
+            where: whereConditions,
             include: [
                 {
                     model: Telefono,
                     as: "telefonoPrimario",
+                    where:
+                        Object.keys(phoneWhereConditions).length > 0
+                            ? phoneWhereConditions
+                            : undefined,
                 },
                 {
                     model: Telefono,
@@ -71,8 +132,18 @@ export const getGarantias = async (req, res) => {
                 },
             ],
             order: [["fechaIngreso", "DESC"]],
+            limit: parseInt(limit),
+            offset: offset,
         });
-        res.status(200).json(garantias);
+
+        res.status(200).json({
+            garantias,
+            totalGarantias: count,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(count / parseInt(limit)),
+            hasNextPage: offset + parseInt(limit) < count,
+            hasPrevPage: parseInt(page) > 1,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({
@@ -142,15 +213,90 @@ export const getGarantiaById = async (req, res) => {
 };
 export const getGarantiasBySucursal = async (req, res) => {
     try {
-        const garantias = await Garantia.findAll({
-            where: { sucursalId: req.params.id },
-        });
-        if (garantias.length === 0) {
-            return res
-                .status(404)
-                .json({ message: "No hay garantias en esta sucursal" });
+        const { id } = req.params;
+        const {
+            fromDate,
+            toDate,
+            model,
+            imei,
+            page = 1,
+            limit = 20,
+        } = req.query;
+
+        // Construir objeto de filtros
+        const whereConditions = { sucursalId: id };
+        const phoneWhereConditions = {};
+
+        // Filtro por fechas de ingreso
+        if (fromDate || toDate) {
+            whereConditions.fechaIngreso = {};
+
+            if (fromDate && toDate) {
+                whereConditions.fechaIngreso = {
+                    [Op.between]: [
+                        formatISO(parse(fromDate, "yyyy-MM-dd", new Date())),
+                        formatISO(parse(toDate, "yyyy-MM-dd", new Date())),
+                    ],
+                };
+            } else if (fromDate) {
+                whereConditions.fechaIngreso = {
+                    [Op.gte]: formatISO(
+                        parse(fromDate, "yyyy-MM-dd", new Date())
+                    ),
+                };
+            } else if (toDate) {
+                whereConditions.fechaIngreso = {
+                    [Op.lte]: formatISO(
+                        parse(toDate, "yyyy-MM-dd", new Date())
+                    ),
+                };
+            }
         }
-        res.status(200).json(garantias);
+
+        // Filtros para el teléfono
+        if (model) {
+            phoneWhereConditions.model = {
+                [Op.iLike]: `%${model}%`,
+            };
+        }
+
+        if (imei) {
+            phoneWhereConditions.imei = {
+                [Op.iLike]: `%${imei}%`,
+            };
+        }
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        const { count, rows: garantias } = await Garantia.findAndCountAll({
+            where: whereConditions,
+            include: [
+                {
+                    model: Telefono,
+                    as: "telefonoPrimario",
+                    where:
+                        Object.keys(phoneWhereConditions).length > 0
+                            ? phoneWhereConditions
+                            : undefined,
+                },
+                {
+                    model: Telefono,
+                    as: "telefonoCambio",
+                },
+            ],
+            order: [["fechaIngreso", "DESC"]],
+            limit: parseInt(limit),
+            offset: offset,
+        });
+
+        res.status(200).json({
+            garantias,
+            totalGarantias: count,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(count / parseInt(limit)),
+            hasNextPage: offset + parseInt(limit) < count,
+            hasPrevPage: parseInt(page) > 1,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({

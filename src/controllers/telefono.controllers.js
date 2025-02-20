@@ -378,18 +378,127 @@ export const getTelefonosEnGarantia = async (req, res) => {
 
 export const getTelefonosDisponiblesYDepositoBySucursal = async (req, res) => {
     try {
-        const { id } = req.params;
-        //obtener los teléfonos disponibles de la sucursal
-        const telefonos = await Telefono.findAll({
-            where: { sucursalId: id, status: ["disponible"] },
-        });
-        //obtener los teléfonos en el deposito
-        const telefonosDeposito = await Telefono.findAll({
-            where: { status: ["deposito"] },
+        const { idSucursal } = req.params;
+
+        const {
+            fromDate,
+            toDate,
+            model,
+            imei,
+            minPrecio,
+            maxPrecio,
+            status,
+            sort,
+            page = 1,
+            limit = 20,
+        } = req.query;
+
+        // Construir objeto de filtros
+        const whereConditions = {
+            sucursalId: idSucursal,
+        };
+
+        // Configuración del ordenamiento
+        let order = [];
+
+        switch (sort) {
+            case "date_desc":
+                order = [["fechaCarga", "DESC"]];
+                break;
+            case "date_asc":
+                order = [["fechaCarga", "ASC"]];
+                break;
+            case "name_desc":
+                order = [["model", "DESC"]];
+                break;
+            case "name_asc":
+                order = [["model", "ASC"]];
+                break;
+            case "price_desc":
+                order = [["price", "DESC"]];
+                break;
+            case "price_asc":
+                order = [["price", "ASC"]];
+                break;
+            default:
+                order = [["fechaCarga", "DESC"]];
+                break;
+        }
+
+        // Filtro por fechas de carga
+        if (fromDate || toDate) {
+            whereConditions.fechaCarga = {};
+
+            if (fromDate && toDate) {
+                whereConditions.fechaCarga = {
+                    [Op.between]: [
+                        formatISO(parse(fromDate, "yyyy-MM-dd", new Date())),
+                        formatISO(parse(toDate, "yyyy-MM-dd", new Date())),
+                    ],
+                };
+            } else if (fromDate) {
+                whereConditions.fechaCarga = {
+                    [Op.gte]: formatISO(
+                        parse(fromDate, "yyyy-MM-dd", new Date())
+                    ),
+                };
+            } else if (toDate) {
+                whereConditions.fechaCarga = {
+                    [Op.lte]: formatISO(
+                        parse(toDate, "yyyy-MM-dd", new Date())
+                    ),
+                };
+            }
+        }
+
+        // Filtro por modelo
+        if (model) {
+            whereConditions.model = {
+                [Op.iLike]: `%${model}%`,
+            };
+        }
+
+        // Filtro por IMEI
+        if (imei) {
+            whereConditions.imei = {
+                [Op.iLike]: `%${imei}%`,
+            };
+        }
+
+        // Filtro por precio
+        if (minPrecio || maxPrecio) {
+            whereConditions.price = {};
+            if (minPrecio) {
+                whereConditions.price[Op.gte] = parseFloat(minPrecio);
+            }
+            if (maxPrecio) {
+                whereConditions.price[Op.lte] = parseFloat(maxPrecio);
+            }
+        }
+
+        // Filtro por status
+        if (status) {
+            whereConditions.status = status;
+        }
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        const { count, rows: telefonos } = await Telefono.findAndCountAll({
+            where: whereConditions,
+            order: order,
+            limit: parseInt(limit),
+            offset: offset,
         });
 
-        //si hay teléfonos en el deposito, retornar los teléfonos disponibles y los teléfonos en el deposito
-        res.status(200).json([...telefonos, ...telefonosDeposito]);
+        res.status(200).json({
+            telefonos,
+            totalTelefonos: count,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(count / parseInt(limit)),
+            hasNextPage: offset + parseInt(limit) < count,
+            hasPrevPage: parseInt(page) > 1,
+            sort,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({

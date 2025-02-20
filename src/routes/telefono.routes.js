@@ -34,7 +34,7 @@ router.get(
 );
 router.get("/list/garantia", authTokenJwt, getTelefonosEnGarantia);
 router.get(
-    "/list/sucursal/:id/disponibles-deposito",
+    "/list/sucursal/:idSucursal/all",
     authTokenJwt,
     getTelefonosDisponiblesYDepositoBySucursal
 );

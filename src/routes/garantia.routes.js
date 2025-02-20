@@ -18,7 +18,7 @@ const router = Router();
 router.post("/register", authTokenJwt, createGarantia);
 router.get("/", authTokenJwt, getGarantias);
 router.get("/registro/:id", authTokenJwt, getGarantiaById);
-router.get("/sucursal/:id", authTokenJwt, getGarantiasBySucursal);
+router.get("/sucursal/:id/list", authTokenJwt, getGarantiasBySucursal);
 router.get("/telefono/:id", authTokenJwt, getGarantiaByTelefonoId);
 router.put("/update/:id", authTokenJwt, updateGarantia);
 router.put("/status/:id", authTokenJwt, updateStatusGarantia);

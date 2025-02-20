@@ -406,19 +406,105 @@ export const deleteVenta = async (req, res) => {
 // Obtener todas las ventas de una sucursal
 export const getVentasBySucursal = async (req, res) => {
     try {
-        const { sucursalId } = req.params;
-        const ventas = await Venta.findAll({
-            where: { sucursalId },
+        const { idSucursal } = req.params;
+        const {
+            fromDate,
+            toDate,
+            model,
+            imei,
+            page = 1,
+            limit = 20,
+        } = req.query;
+
+        // Construir objeto de filtros
+        const whereConditions = { sucursalId: idSucursal };
+        const phoneWhereConditions = {};
+        console.log(fromDate, toDate);
+        // Filtro por fechas
+        if (fromDate || toDate) {
+            whereConditions.fecha = {};
+
+            if (fromDate && toDate) {
+                // Escenario 1: Filtrar entre dos fechas
+                whereConditions.fecha = {
+                    [Op.between]: [
+                        formatISO(parse(fromDate, "yyyy-MM-dd", new Date())),
+                        formatISO(parse(toDate, "yyyy-MM-dd", new Date())),
+                    ],
+                };
+            } else if (fromDate) {
+                // Escenario 2: Filtrar desde una fecha en adelante
+                whereConditions.fecha = {
+                    [Op.gte]: new Date(fromDate),
+                };
+            } else if (toDate) {
+                // Escenario 3: Filtrar hasta una fecha específica
+                whereConditions.fecha = {
+                    [Op.lte]: new Date(toDate),
+                };
+            }
+        }
+
+        // Filtro por modelo de teléfono
+        if (model) {
+            phoneWhereConditions.model = {
+                [Op.iLike]: `%${model}%`,
+            };
+        }
+
+        // Filtro por IMEI
+        if (imei) {
+            phoneWhereConditions.imei = {
+                [Op.iLike]: `%${imei}%`,
+            };
+        }
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+
+        const { count, rows: ventas } = await Venta.findAndCountAll({
+            where: whereConditions,
             include: [
                 {
                     model: Telefono,
                     as: "telefono",
-                    attributes: ["id", "model", "imei", "price"],
+                    attributes: [
+                        "id",
+                        "model",
+                        "imei",
+                        "price",
+                        "fechaCarga",
+                        "storage_capacity",
+                        "color",
+                    ],
+                    where:
+                        Object.keys(phoneWhereConditions).length > 0
+                            ? phoneWhereConditions
+                            : undefined,
+                },
+                {
+                    model: Sucursal,
+                    as: "sucursal",
+                    attributes: ["id", "address"],
+                },
+                {
+                    model: Cliente,
+                    as: "cliente",
+                    attributes: ["id", "nombre", "telefono", "dni"],
                 },
             ],
+            order: [["fecha", "DESC"]],
+            limit: parseInt(limit),
+            offset: offset,
         });
 
-        res.status(200).json(ventas);
+        res.status(200).json({
+            ventas,
+            totalVentas: count,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(count / parseInt(limit)),
+            hasNextPage: offset + parseInt(limit) < count,
+            hasPrevPage: parseInt(page) > 1,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({
