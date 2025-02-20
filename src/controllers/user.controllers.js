@@ -123,6 +123,7 @@ export const changeUserStatus = async (req, res) => {
         const { isActive } = req.body;
 
         const user = await User.findByPk(id);
+
         if (!user) {
             return res
                 .status(404)

@@ -154,6 +154,7 @@ export const getGarantias = async (req, res) => {
 };
 export const getGarantiaById = async (req, res) => {
     try {
+        const data = {};
         const garantia = await Garantia.findByPk(req.params.id, {
             include: [
                 {
@@ -179,30 +180,15 @@ export const getGarantiaById = async (req, res) => {
                 },
             ],
         });
+
         if (!infoVenta) {
-            return res
-                .status(404)
-                .json({ message: "La garantia no tiene una venta asociada" });
+            data.garantia = garantia;
+        } else {
+            data.garantia = garantia;
+            data.infoVenta = infoVenta;
         }
-        res.status(200).json({
-            garantia,
-            infoVenta: {
-                fechaVenta: infoVenta.fecha,
-                tipo: infoVenta.tipo_venta,
-                vendedor: infoVenta.vendedor,
-                cliente: {
-                    nombre: infoVenta.cliente.nombre,
-                    telefono: infoVenta.cliente.telefono,
-                    dni: infoVenta.cliente.dni,
-                },
-                pago: {
-                    usd: infoVenta.pago_usd,
-                    pesos: infoVenta.pago_pesos,
-                    tarjeta: infoVenta.pago_tarjeta,
-                    transferencia: infoVenta.pago_transferencia,
-                },
-            },
-        });
+
+        res.status(200).json(data);
     } catch (error) {
         console.error(error);
         res.status(500).json({
