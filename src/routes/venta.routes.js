@@ -22,7 +22,7 @@ router.get("/:id", authTokenJwt, authRole(["admin"]), getVentaById);
 router.get("/vendedor/:nameSeller", authTokenJwt, getVentasByNameSeller);
 router.get("/telefono/:id", authTokenJwt, getVentaByTelefonoId);
 //////////////////////////////////////////////////////////////////////////////
-router.put("/update/:id", authTokenJwt, authRole(["admin"]), updateVenta);
+router.patch("/update/:id", authTokenJwt, authRole(["admin"]), updateVenta);
 router.delete("/delete/:id", authTokenJwt, authRole(["admin"]), deleteVenta);
 
 export default router;

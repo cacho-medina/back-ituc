@@ -340,13 +340,16 @@ export const updateVenta = async (req, res) => {
     try {
         const { id } = req.params;
         const {
-            fecha,
-            vendedor,
             nombre_cliente,
             telefono_cliente,
             dni_cliente,
-            telefonoId,
-            sucursalId,
+            pago_usd,
+            pago_pesos,
+            pago_tarjeta,
+            pago_transferencia,
+            telefonoPermutado_model,
+            telefonoPermutado_imei,
+            telefonoPermutado_cotizacion,
         } = req.body;
 
         const venta = await Venta.findByPk(id);
@@ -354,14 +357,24 @@ export const updateVenta = async (req, res) => {
             return res.status(404).json({ message: "Venta no encontrada" });
         }
 
-        venta.fecha = fecha || venta.fecha;
-        venta.vendedor = vendedor || venta.vendedor;
+        //actualiza los datos de la venta
         venta.nombre_cliente = nombre_cliente || venta.nombre_cliente;
         venta.telefono_cliente = telefono_cliente || venta.telefono_cliente;
         venta.dni_cliente = dni_cliente || venta.dni_cliente;
-        venta.telefonoId = telefonoId || venta.telefonoId;
-        venta.sucursalId = sucursalId || venta.sucursalId;
-
+        venta.pago_usd = pago_usd || venta.pago_usd;
+        venta.pago_pesos = pago_pesos || venta.pago_pesos;
+        venta.pago_tarjeta = pago_tarjeta || venta.pago_tarjeta;
+        venta.pago_transferencia =
+            pago_transferencia || venta.pago_transferencia;
+        if (venta.tipo_venta === "permuta") {
+            venta.telefonoPermutado_model =
+                telefonoPermutado_model || venta.telefonoPermutado_model;
+            venta.telefonoPermutado_imei =
+                telefonoPermutado_imei || venta.telefonoPermutado_imei;
+            venta.telefonoPermutado_cotizacion =
+                telefonoPermutado_cotizacion ||
+                venta.telefonoPermutado_cotizacion;
+        }
         await venta.save();
 
         res.status(200).json(venta);

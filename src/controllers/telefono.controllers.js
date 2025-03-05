@@ -67,12 +67,17 @@ export const getTelefonos = async (req, res) => {
             provider,
             status,
             sort,
+            sucursalId,
             page = 1,
             limit = 20,
         } = req.query;
 
         // Construir objeto de filtros
-        const whereConditions = {};
+        const whereConditions = {
+            status: {
+                [Op.not]: "vendido",
+            },
+        };
 
         // Configuración del ordenamiento
         let order = [];
@@ -160,6 +165,11 @@ export const getTelefonos = async (req, res) => {
         // Filtro por status
         if (status) {
             whereConditions.status = status;
+        }
+
+        // Filtro por sucursal
+        if (sucursalId) {
+            whereConditions.sucursalId = sucursalId;
         }
 
         const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -396,6 +406,9 @@ export const getTelefonosDisponiblesYDepositoBySucursal = async (req, res) => {
         // Construir objeto de filtros
         const whereConditions = {
             sucursalId: idSucursal,
+            status: {
+                [Op.not]: "vendido",
+            },
         };
 
         // Configuración del ordenamiento
